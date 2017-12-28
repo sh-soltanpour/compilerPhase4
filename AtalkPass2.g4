@@ -9,8 +9,10 @@ grammar AtalkPass2;
   void endScope(){
     SymbolTable.pop();
   }
+	Translator mips = new Translator();
+
 }
-program: { beginScope();} (actor | NL)* {endScope();};
+program: { beginScope();} (actor | NL)* {endScope();mips.makeOutput();};
 
 actor:
 	{beginScope();} 'actor' ID '<' CONST_NUM '>' NL (
@@ -19,7 +21,27 @@ actor:
 		| NL
 	)* 'end' {endScope();} (NL | EOF);
 
-state: type ID (',' ID)* NL;
+state: type id1=ID
+			{	
+				SymbolTableItem item = SymbolTable.top.get($id1.text);
+				SymbolTableVariableItemBase var =  (SymbolTableVariableItemBase) item;
+				if (var.getVariable().getType() instanceof IntType){	
+					mips.addGlobalVariable(var.getOffset(),0);
+				}
+				else if (var.getVariable().getType() instanceof CharType){
+					mips.addGlobalVariable(var.getOffset(),'\0');
+				}
+			} 
+				(',' id2=ID{	
+				SymbolTableItem item2 = SymbolTable.top.get($id2.text);
+				SymbolTableVariableItemBase var2 =  (SymbolTableVariableItemBase) item2;
+				if (var2.getVariable().getType() instanceof IntType){	
+					mips.addGlobalVariable(var2.getOffset(),0);
+				}
+				else if (var2.getVariable().getType() instanceof CharType){
+					mips.addGlobalVariable(var2.getOffset(),'\0');
+				}
+			})* NL;
 
 receiver:
 	{beginScope();} 'receiver' recName=ID '(' (var1=type ID{SymbolTable.define();} (',' var2=type ID{SymbolTable.define();})*)? ')' NL 
