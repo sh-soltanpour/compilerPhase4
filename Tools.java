@@ -202,4 +202,17 @@ public class Tools {
       System.out.println("line"+line+": foreach parameter is not iterable");
     }
   }
+
+  static void addLocalToStack(Translator mips,String name){
+    SymbolTableItem item = SymbolTable.top.get(name);
+		if(item instanceof SymbolTableVariableItemBase){
+				SymbolTableVariableItemBase var = (SymbolTableVariableItemBase) item;
+				if (var.getVariable().getType() instanceof IntType){	
+					mips.addIntToStack(0);
+				}
+				else if (var.getVariable().getType() instanceof CharType){	
+					mips.addCharToStack('\0');
+				}
+		}		
+  }
 }

@@ -88,7 +88,7 @@ statement:
 	| block;
 
 stm_vardef:
-	type id1=ID { SymbolTable.define(); } ('=' var2=expr 
+	type id1=ID { SymbolTable.define();Tools.addLocalToStack(mips,$id1.text);} ('=' var2=expr 
 	{
 		SymbolTableItem item = SymbolTable.top.get($id1.text);
 		if(item instanceof SymbolTableVariableItemBase){
@@ -97,7 +97,7 @@ stm_vardef:
 		}		
 	}
 	)? (
-	',' id2=ID { SymbolTable.define(); } ('=' var2=expr
+	',' id2=ID { SymbolTable.define();Tools.addLocalToStack(mips,$id2.text); } ('=' var2=expr
 		{
 			SymbolTableItem item = SymbolTable.top.get($id2.text);
 			if(item instanceof SymbolTableVariableItemBase){
@@ -210,7 +210,7 @@ expr_eq
 
 expr_eq_tmp
 	returns[Type return_type, boolean isLvalue]: 
-	op=('==' | '<>') var1=expr_cmp var2=expr_eq_tmp {$isLvalue = false;$return_type = Tools.expr_eq_tmp_typeCheck($var1.return_type, $var2.return_type,$op.getLine());}
+	op=('==' | '<>') var1=expr_cmp{mips.operationCommand($op.text);} var2=expr_eq_tmp {$isLvalue = false;$return_type = Tools.expr_eq_tmp_typeCheck($var1.return_type, $var2.return_type,$op.getLine());}
 	| {$isLvalue = true;$return_type = null;};
 
 expr_cmp
@@ -224,7 +224,7 @@ expr_cmp
 
 expr_cmp_tmp
 	returns[Type return_type, boolean isLvalue]: 
-	op=('<' | '>') var1 = expr_add var2 = expr_cmp_tmp {$isLvalue = false;$return_type = Tools.expr_mult_tmp_typeCheck($var1.return_type, $var2.return_type,$op.getLine());}
+	op=('<' | '>') var1 = expr_add {mips.operationCommand($op.text);} var2 = expr_cmp_tmp {$isLvalue = false;$return_type = Tools.expr_mult_tmp_typeCheck($var1.return_type, $var2.return_type,$op.getLine());}
 	| {$isLvalue = true;$return_type = null;};
 
 expr_add
@@ -238,7 +238,7 @@ expr_add
 
 expr_add_tmp
 	returns[Type return_type, boolean isLvalue]: 
-	op=('+' | '-') var1 = expr_mult var2 = expr_add_tmp {$isLvalue = false;$return_type = Tools.expr_mult_tmp_typeCheck($var1.return_type, $var2.return_type,$op.getLine());
+	op=('+' | '-') var1 = expr_mult {mips.operationCommand($op.text);} var2 = expr_add_tmp {$isLvalue = false;$return_type = Tools.expr_mult_tmp_typeCheck($var1.return_type, $var2.return_type,$op.getLine());
 		}
 	| {$isLvalue = true;$return_type = null;};
 
@@ -252,7 +252,7 @@ expr_mult
 
 expr_mult_tmp
 	returns[Type return_type, boolean isLvalue]: 
-	op=('*' | '/') var1 = expr_un var2 = expr_mult_tmp {$isLvalue =false;$return_type = Tools.expr_mult_tmp_typeCheck($var1.return_type, $var2.return_type,$op.getLine());
+	op=('*' | '/') var1 = expr_un {mips.operationCommand($op.text);} var2 = expr_mult_tmp {$isLvalue =false;$return_type = Tools.expr_mult_tmp_typeCheck($var1.return_type, $var2.return_type,$op.getLine());
 		}
 	| {$isLvalue = true;$return_type = null;};
 
@@ -263,6 +263,7 @@ expr_un
 		$isLvalue = false;
 		$return_type = Tools.expr_un_typeCheck($expr_un_var.return_type,$op.getLine());
 		$line = $op.getLine();
+		mips.operationCommand($op.text + $op.text);
 	}
 	| var1=expr_mem 
 	{$isLvalue = $var1.isLvalue;
@@ -302,6 +303,14 @@ expr_other
                 SymbolTableVariableItemBase var = (SymbolTableVariableItemBase) item;
 								$return_type = var.getVariable().getType();
 								$isLvalue = var.isLvalue();
+								if (var.getBaseRegister() == Register.SP){
+                    if ($isLvalue == false) mips.addToStack($id.text, var.getOffset()*-1);
+                    else mips.addAddressToStack($id.text, var.getOffset()*-1);
+                }
+                else {
+                    if ($isLvalue == false) mips.addGlobalToStack(var.getOffset());
+                    else mips.addGlobalAddressToStack($id.text, var.getOffset());
+                }
 						}
   }
 	|{$isLvalue = false;ArrayList <Type> types = new ArrayList<Type>();} openBr='{' var1=expr{types.add($var1.return_type);}
