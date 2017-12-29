@@ -94,11 +94,14 @@ statement:
 stm_vardef:
 	type id1=ID { SymbolTable.define();Tools.addLocalToStack(mips,$id1.text);} ('=' var2=expr[false]
 	{
+		
 		SymbolTableItem item = SymbolTable.top.get($id1.text);
 		if(item instanceof SymbolTableVariableItemBase){
 				SymbolTableVariableItemBase var = (SymbolTableVariableItemBase) item;
 				Tools.expr_assign_typeCheck(var.getVariable().getType(), $var2.return_type,$id1.getLine());
-		}		
+				mips.addAddressToStack($id1.text, var.getOffset()*-1);
+		}
+		mips.assignCommandInVardef();		
 	}
 	)? (
 	',' id2=ID { SymbolTable.define();Tools.addLocalToStack(mips,$id2.text); } ('=' var2=expr[false]
@@ -107,7 +110,9 @@ stm_vardef:
 			if(item instanceof SymbolTableVariableItemBase){
 				SymbolTableVariableItemBase var = (SymbolTableVariableItemBase) item;
 				Tools.expr_assign_typeCheck(var.getVariable().getType(), $var2.return_type,$id2.getLine());
+				mips.addAddressToStack($id2.text, var.getOffset()*-1);
 			}
+			mips.assignCommandInVardef();
 		}
 		)?
 	)* NL;

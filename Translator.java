@@ -118,6 +118,19 @@ public class Translator {
     popStack();
     instructions.add("# end of assign");
   }
+  public void assignCommandInVardef(){
+    instructions.add("# start of assign in vardef");
+    instructions.add("lw $a1, 4($sp)");
+    popStack();
+    instructions.add("lw $a0, 4($sp)");
+    popStack();
+    instructions.add("sw $a0, 0($a1)");
+    instructions.add("sw $a0, 0($sp)");
+    instructions.add("addiu $sp, $sp, -4");
+    popStack();
+    instructions.add("# end of assign in vardef");
+
+  }
 
   public void operationCommand(String s) {
     instructions.add("# operation " + s);
