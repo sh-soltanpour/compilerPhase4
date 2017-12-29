@@ -92,7 +92,7 @@ statement:
 	| block;
 
 stm_vardef:
-	type id1=ID { SymbolTable.define();Tools.addLocalToStack(mips,$id1.text);} ('=' var2=expr 
+	type id1=ID { SymbolTable.define();Tools.addLocalToStack(mips,$id1.text);} ('=' var2=expr[false]
 	{
 		SymbolTableItem item = SymbolTable.top.get($id1.text);
 		if(item instanceof SymbolTableVariableItemBase){
@@ -101,7 +101,7 @@ stm_vardef:
 		}		
 	}
 	)? (
-	',' id2=ID { SymbolTable.define();Tools.addLocalToStack(mips,$id2.text); } ('=' var2=expr
+	',' id2=ID { SymbolTable.define();Tools.addLocalToStack(mips,$id2.text); } ('=' var2=expr[false]
 		{
 			SymbolTableItem item = SymbolTable.top.get($id2.text);
 			if(item instanceof SymbolTableVariableItemBase){
@@ -113,7 +113,7 @@ stm_vardef:
 	)* NL;
 
 stm_tell:{ArrayList<Type> types = new ArrayList<Type>();}
-	(actorId = ID | actorId='sender' | actorId='self') '<<' recName=ID '(' (var1=expr{types.add($var1.return_type);} (',' var2=expr{types.add($var2.return_type);})*)? ')' NL
+	(actorId = ID | actorId='sender' | actorId='self') '<<' recName=ID '(' (var1=expr[false]{types.add($var1.return_type);} (',' var2=expr[false]{types.add($var2.return_type);})*)? ')' NL
 	{		
 			if ($actorId.text.equals("self")){
 				if(!SymbolTable.top.hasReceiver($recName.text, types)){
@@ -142,153 +142,153 @@ stm_tell:{ArrayList<Type> types = new ArrayList<Type>();}
 			}
 	};
 
-stm_write: writeToken='write' '(' var1=expr ')' NL{mips.write();Tools.checkWriteArgument($var1.return_type,$writeToken.getLine());};
+stm_write: writeToken='write' '(' var1=expr[false] ')' NL{mips.write();Tools.checkWriteArgument($var1.return_type,$writeToken.getLine());};
 
 stm_if_elseif_else:
-	ifToken='if' var1=expr{Tools.checkConditionType($var1.return_type,$ifToken.getLine());} NL{beginScope();} statements{endScope();}
-	 (elseifToken='elseif' var2=expr {Tools.checkConditionType($var2.return_type,$elseifToken.getLine());} NL {beginScope();}statements{endScope();})* (
+	ifToken='if' var1=expr[false]{Tools.checkConditionType($var1.return_type,$ifToken.getLine());} NL{beginScope();} statements{endScope();}
+	 (elseifToken='elseif' var2=expr[false] {Tools.checkConditionType($var2.return_type,$elseifToken.getLine());} NL {beginScope();}statements{endScope();})* (
 		'else' NL {beginScope();}statements{endScope();}
 	)? 'end' NL;
 
-stm_foreach: {beginScope();} foreachToken='foreach' ID {SymbolTable.define();} 'in' var1=expr{Tools.checkArrayOfForeach($var1.return_type,$foreachToken.getLine());} NL statements 'end' NL{endScope();};
+stm_foreach: {beginScope();} foreachToken='foreach' ID {SymbolTable.define();} 'in' var1=expr[false]{Tools.checkArrayOfForeach($var1.return_type,$foreachToken.getLine());} NL statements 'end' NL{endScope();};
 
 stm_quit: 'quit' NL;
 
 stm_break: 'break' NL;
 
-stm_assignment: expr NL;
+stm_assignment: expr[false] NL;
 
-expr
+expr[boolean isLeft]
 	returns[Type return_type, boolean isLvalue, int line]:
-	expr_assign {$line =$expr_assign.line;$isLvalue = $expr_assign.isLvalue;$return_type = $expr_assign.return_type;};
+	expr_assign[$isLeft] {$line =$expr_assign.line;$isLvalue = $expr_assign.isLvalue;$return_type = $expr_assign.return_type;};
 
-expr_assign
+expr_assign[boolean isLeft]
 	returns[Type return_type, boolean isLvalue, int line]:
-	var1=expr_or op='='{mips.assignCommand();} var2=expr_assign {Tools.checkLvalue($var1.isLvalue,$op.getLine());$return_type = Tools.expr_assign_typeCheck($var1.return_type, $var2.return_type,$op.getLine());}
-	| var3=expr_or 
+	var1=expr_or[true] op='=' var2=expr_assign[false] {mips.assignCommand();Tools.checkLvalue($var1.isLvalue,$op.getLine());$return_type = Tools.expr_assign_typeCheck($var1.return_type, $var2.return_type,$op.getLine());}
+	| var3=expr_or [false]
 	{
 		$isLvalue = $var3.isLvalue;$return_type = $expr_or.return_type;
 		$line = $var3.line;	
 	};
 
-expr_or
-	returns[Type return_type, boolean isLvalue, int line]: var1=expr_and var2=expr_or_tmp
+expr_or[boolean isLeft]
+	returns[Type return_type, boolean isLvalue, int line]: var1=expr_and[$isLeft] var2=expr_or_tmp[$isLeft]
 	{$return_type = Tools.expr_mult_typeCheck($var1.return_type, $var2.return_type,$var1.line);
 		$isLvalue = $var1.isLvalue && $var2.isLvalue;
 	}
 	;
 
-expr_or_tmp
+expr_or_tmp[boolean isLeft]
 	returns[Type return_type, boolean isLvalue]:
-	op='or' var1=expr_and {mips.operationCommand($op.text);} var2=expr_or_tmp
+	op='or' var1=expr_and[$isLeft] {mips.operationCommand($op.text);} var2=expr_or_tmp[$isLeft]
 	{$return_type = Tools.expr_mult_tmp_typeCheck($var1.return_type, $var2.return_type,$op.getLine());
 	 $isLvalue = false;
 	}
 	| {$isLvalue = true;$return_type = null;};
 
-expr_and
+expr_and[boolean isLeft]
 	returns[Type return_type, boolean isLvalue, int line]: 
-	var1=expr_eq var2=expr_and_tmp 
+	var1=expr_eq[$isLeft] var2=expr_and_tmp[$isLeft]
 		{
 		$line = $var1.line;
 		$return_type = Tools.expr_mult_typeCheck($var1.return_type, $var2.return_type,$var1.line);
 		$isLvalue = $var1.isLvalue && $var2.isLvalue;
 		};
 
-expr_and_tmp
+expr_and_tmp[boolean isLeft]
 	returns[Type return_type, boolean isLvalue, int line]:
-	op='and' var1=expr_eq{mips.operationCommand($op.text);} var2=expr_and_tmp 
+	op='and' var1=expr_eq[$isLeft]{mips.operationCommand($op.text);} var2=expr_and_tmp[$isLeft] 
 		{
 		$return_type = Tools.expr_mult_tmp_typeCheck($var1.return_type, $var2.return_type,$op.line);
 		$isLvalue = false;
 		}
 	| {$isLvalue = true;$return_type = null;};
 
-expr_eq
+expr_eq[boolean isLeft]
 	returns[Type return_type, boolean isLvalue, int line]: 
-	var1=expr_cmp var2=expr_eq_tmp{
+	var1=expr_cmp[$isLeft] var2=expr_eq_tmp[$isLeft]{
 		$line = $var1.line;
 		$isLvalue = $var1.isLvalue && $var2.isLvalue;
 		$return_type = Tools.expr_eq_tmp_typeCheck($var1.return_type, $var2.return_type,$var1.line);
 	};
 
-expr_eq_tmp
+expr_eq_tmp[boolean isLeft]
 	returns[Type return_type, boolean isLvalue]: 
-	op=('==' | '<>') var1=expr_cmp{mips.operationCommand($op.text);} var2=expr_eq_tmp {$isLvalue = false;$return_type = Tools.expr_eq_tmp_typeCheck($var1.return_type, $var2.return_type,$op.getLine());}
+	op=('==' | '<>') var1=expr_cmp[$isLeft]{mips.operationCommand($op.text);} var2=expr_eq_tmp[$isLeft] {$isLvalue = false;$return_type = Tools.expr_eq_tmp_typeCheck($var1.return_type, $var2.return_type,$op.getLine());}
 	| {$isLvalue = true;$return_type = null;};
 
-expr_cmp
+expr_cmp[boolean isLeft]
 	returns[Type return_type, boolean isLvalue, int line]:
-	var1 = expr_add var2 = expr_cmp_tmp 
+	var1 = expr_add[$isLeft] var2 = expr_cmp_tmp[$isLeft] 
 	{
 		$line = $var1.line;
 		$return_type = Tools.expr_mult_typeCheck($var1.return_type, $var2.return_type,$var1.line);
 		$isLvalue = $var1.isLvalue && $var2.isLvalue;
 	};
 
-expr_cmp_tmp
+expr_cmp_tmp[boolean isLeft]
 	returns[Type return_type, boolean isLvalue]: 
-	op=('<' | '>') var1 = expr_add {mips.operationCommand($op.text);} var2 = expr_cmp_tmp {$isLvalue = false;$return_type = Tools.expr_mult_tmp_typeCheck($var1.return_type, $var2.return_type,$op.getLine());}
+	op=('<' | '>') var1 = expr_add[$isLeft] {mips.operationCommand($op.text);} var2 = expr_cmp_tmp[$isLeft] {$isLvalue = false;$return_type = Tools.expr_mult_tmp_typeCheck($var1.return_type, $var2.return_type,$op.getLine());}
 	| {$isLvalue = true;$return_type = null;};
 
-expr_add
+expr_add[boolean isLeft]
 	returns[Type return_type, boolean isLvalue, int line]:
-	var1 = expr_mult var2 = expr_add_tmp {
+	var1 = expr_mult[$isLeft] var2 = expr_add_tmp[$isLeft] {
 		$line = $var1.line;
 		$isLvalue = $var1.isLvalue && $var2.isLvalue;
 		$return_type = Tools.expr_mult_typeCheck($var1.return_type, $var2.return_type,$var1.line);
 	
 	};
 
-expr_add_tmp
+expr_add_tmp[boolean isLeft]
 	returns[Type return_type, boolean isLvalue]: 
-	op=('+' | '-') var1 = expr_mult {mips.operationCommand($op.text);} var2 = expr_add_tmp {$isLvalue = false;$return_type = Tools.expr_mult_tmp_typeCheck($var1.return_type, $var2.return_type,$op.getLine());
+	op=('+' | '-') var1 = expr_mult[$isLeft] {mips.operationCommand($op.text);} var2 = expr_add_tmp[$isLeft] {$isLvalue = false;$return_type = Tools.expr_mult_tmp_typeCheck($var1.return_type, $var2.return_type,$op.getLine());
 		}
 	| {$isLvalue = true;$return_type = null;};
 
-expr_mult
+expr_mult[boolean isLeft]
 	returns[Type return_type, boolean isLvalue, int line]:
-	var1 = expr_un var2 = expr_mult_tmp 
+	var1 = expr_un[$isLeft] var2 = expr_mult_tmp[$isLeft] 
 	{
 		$line = $var1.line;
 		$isLvalue=$var1.isLvalue && $var2.isLvalue;$return_type = Tools.expr_mult_typeCheck($var1.return_type, $var2.return_type,$var1.line);
 	};
 
-expr_mult_tmp
+expr_mult_tmp[boolean isLeft]
 	returns[Type return_type, boolean isLvalue]: 
-	op=('*' | '/') var1 = expr_un {mips.operationCommand($op.text);} var2 = expr_mult_tmp {$isLvalue =false;$return_type = Tools.expr_mult_tmp_typeCheck($var1.return_type, $var2.return_type,$op.getLine());
+	op=('*' | '/') var1 = expr_un[$isLeft] {mips.operationCommand($op.text);} var2 = expr_mult_tmp[$isLeft] {$isLvalue =false;$return_type = Tools.expr_mult_tmp_typeCheck($var1.return_type, $var2.return_type,$op.getLine());
 		}
 	| {$isLvalue = true;$return_type = null;};
 
-expr_un
+expr_un[boolean isLeft]
 	returns[Type return_type, boolean isLvalue, int line]: 
-	op=('not' | '-') expr_un_var = expr_un 
+	op=('not' | '-') expr_un_var = expr_un[$isLeft] 
 	{
 		$isLvalue = false;
 		$return_type = Tools.expr_un_typeCheck($expr_un_var.return_type,$op.getLine());
 		$line = $op.getLine();
 		mips.operationCommand($op.text + $op.text);
 	}
-	| var1=expr_mem 
+	| var1=expr_mem[$isLeft] 
 	{$isLvalue = $var1.isLvalue;
 	$return_type = $expr_mem.return_type;
 	$line=$var1.line;};
 
-expr_mem
+expr_mem[boolean isLeft]
 	returns[Type return_type, boolean isLvalue, int line]:
-	var1=expr_other expr_mem_tmp 
+	var1=expr_other[$isLeft] expr_mem_tmp[$isLeft] 
 	{
 		$line = $var1.line;
 		$return_type = Tools.expr_mem_typeCheck($expr_other.return_type,$expr_mem_tmp.count,$var1.line);
 		$isLvalue = $var1.isLvalue;
 	};
 
-expr_mem_tmp
+expr_mem_tmp[boolean isLeft]
 	returns[int count]:
-	'[' expr1 = expr ']' expr2 = expr_mem_tmp {$count = $expr2.count + 1;}
+	'[' expr1 = expr[$isLeft] ']' expr2 = expr_mem_tmp[$isLeft] {$count = $expr2.count + 1;}
 	| {$count = 0;};
 
-expr_other
+expr_other[boolean isLeft]
 	returns[Type return_type, boolean isLvalue, int line]:
 	num=CONST_NUM {mips.addToStack(Integer.parseInt($num.text));$return_type = IntType.getInstance();$isLvalue = false;$line = $num.getLine(); }
 	| character=CONST_CHAR {$return_type = CharType.getInstance();$isLvalue = false;$line=$character.getLine();}
@@ -308,7 +308,7 @@ expr_other
 								$return_type = var.getVariable().getType();
 								$isLvalue = var.isLvalue();
 								if (var.getBaseRegister() == Register.SP){
-                    if ($isLvalue == false) mips.addToStack($id.text, var.getOffset()*-1);
+                    if (!$isLeft) mips.addToStack($id.text, var.getOffset()*-1);
                     else mips.addAddressToStack($id.text, var.getOffset()*-1);
                 }
                 else {
@@ -317,11 +317,11 @@ expr_other
                 }
 						}
   }
-	|{$isLvalue = false;ArrayList <Type> types = new ArrayList<Type>();} openBr='{' var1=expr{types.add($var1.return_type);}
-	 (',' var2=expr{types.add($var2.return_type);})* '}' {$return_type = Tools.arrayInitTypeCheck(types,$openBr.getLine());$line = $openBr.getLine();}
+	|{$isLvalue = false;ArrayList <Type> types = new ArrayList<Type>();} openBr='{' var1=expr[$isLeft]{types.add($var1.return_type);}
+	 (',' var2=expr[$isLeft]{types.add($var2.return_type);})* '}' {$return_type = Tools.arrayInitTypeCheck(types,$openBr.getLine());$line = $openBr.getLine();}
 	
 	| 'read' openPr='(' num = CONST_NUM ')' {$isLvalue = false;$return_type = new ArrayType(CharType.getInstance(),Integer.parseInt($num.text));$line=$openPr.getLine();}
-	| openPr='(' var1=expr ')' {$isLvalue = $var1.isLvalue;$return_type = $var1.return_type;$isLvalue = true;$line=$openPr.getLine();} ;
+	| openPr='(' var1=expr[$isLeft] ')' {$isLvalue = $var1.isLvalue;$return_type = $var1.return_type;$isLvalue = true;$line=$openPr.getLine();} ;
 
 CONST_NUM: [0-9]+;
 
