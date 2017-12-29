@@ -177,6 +177,30 @@ public class Translator {
       instructions.add("sw $a2, 0($sp)");
       instructions.add("addiu $sp, $sp, -4");
     }
+    else if (s.equals("==") || s.equals("<>")){
+      instructions.add("lw $a0, 4($sp)");
+      popStack();
+      instructions.add("lw $a1, 4($sp)");
+      popStack();
+      instructions.add("slt $a2, $a0, $a1");
+      instructions.add("slt $a3, $a1, $a0");
+      if(s.equals("=="))instructions.add("nor $a0, $a2, $a3");
+      else instructions.add("and $a0, $a2, $a3");
+
+      instructions.add("sw $a0, 0($sp)");
+      instructions.add("addiu $sp, $sp, -4");
+    }
+    else if (s.equals("and") || s.equals("or")){
+      instructions.add("lw $a0, 4($sp)");
+      popStack();
+      instructions.add("lw $a1, 4($sp)");
+      popStack();
+      instructions.add(s+" $a2, $a0, $a1");
+
+      instructions.add("sw $a0, 0($sp)");
+      instructions.add("addiu $sp, $sp, -4");
+    }
+
     instructions.add("# end of operation " + s);
   }
 
@@ -210,5 +234,15 @@ public class Translator {
   public void addGlobalVariable(int adr, char x) {
     int asciiCode = x - '\0';
     addGlobalVariable(adr, asciiCode);
+  }
+  public void copySPToFP(){
+    instructions.add("#start of copy sp to fp");
+    instructions.add("move $fp, $sp");
+    instructions.add("#end of copy sp to fp");
+  }
+  public void reverseFP(int x){
+    instructions.add("#start of reverseFP");
+    instructions.add("li $fp,"+x);
+    instructions.add("#end of reverseFP");
   }
 }

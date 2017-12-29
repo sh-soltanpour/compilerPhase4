@@ -5,9 +5,13 @@ grammar AtalkPass2;
   }
 	 void beginScope() {
       SymbolTable.push();
+			mips.copySPToFP();
+			SymbolTable.top.setOffset(Register.FP,SymbolTable.top.getOffset(Register.SP));
   }
   void endScope(){
     SymbolTable.pop();
+		if (SymbolTable.top != null)
+			mips.reverseFP(SymbolTable.top.getOffset(Register.FP));
   }
 	Translator mips = new Translator();
 
@@ -138,7 +142,7 @@ stm_tell:{ArrayList<Type> types = new ArrayList<Type>();}
 			}
 	};
 
-stm_write: writeToken='write' '(' var1=expr ')' NL{Tools.checkWriteArgument($var1.return_type,$writeToken.getLine());};
+stm_write: writeToken='write' '(' var1=expr ')' NL{mips.write();Tools.checkWriteArgument($var1.return_type,$writeToken.getLine());};
 
 stm_if_elseif_else:
 	ifToken='if' var1=expr{Tools.checkConditionType($var1.return_type,$ifToken.getLine());} NL{beginScope();} statements{endScope();}
@@ -160,7 +164,7 @@ expr
 
 expr_assign
 	returns[Type return_type, boolean isLvalue, int line]:
-	var1=expr_or op='=' var2=expr_assign {Tools.checkLvalue($var1.isLvalue,$op.getLine());$return_type = Tools.expr_assign_typeCheck($var1.return_type, $var2.return_type,$op.getLine());}
+	var1=expr_or op='='{mips.assignCommand();} var2=expr_assign {Tools.checkLvalue($var1.isLvalue,$op.getLine());$return_type = Tools.expr_assign_typeCheck($var1.return_type, $var2.return_type,$op.getLine());}
 	| var3=expr_or 
 	{
 		$isLvalue = $var3.isLvalue;$return_type = $expr_or.return_type;
@@ -176,7 +180,7 @@ expr_or
 
 expr_or_tmp
 	returns[Type return_type, boolean isLvalue]:
-	op='or' var1=expr_and var2=expr_or_tmp
+	op='or' var1=expr_and {mips.operationCommand($op.text);} var2=expr_or_tmp
 	{$return_type = Tools.expr_mult_tmp_typeCheck($var1.return_type, $var2.return_type,$op.getLine());
 	 $isLvalue = false;
 	}
@@ -193,7 +197,7 @@ expr_and
 
 expr_and_tmp
 	returns[Type return_type, boolean isLvalue, int line]:
-	op='and' var1=expr_eq var2=expr_and_tmp 
+	op='and' var1=expr_eq{mips.operationCommand($op.text);} var2=expr_and_tmp 
 		{
 		$return_type = Tools.expr_mult_tmp_typeCheck($var1.return_type, $var2.return_type,$op.line);
 		$isLvalue = false;
@@ -286,7 +290,7 @@ expr_mem_tmp
 
 expr_other
 	returns[Type return_type, boolean isLvalue, int line]:
-	num=CONST_NUM {$return_type = IntType.getInstance();$isLvalue = false;$line = $num.getLine(); }
+	num=CONST_NUM {mips.addToStack(Integer.parseInt($num.text));$return_type = IntType.getInstance();$isLvalue = false;$line = $num.getLine(); }
 	| character=CONST_CHAR {$return_type = CharType.getInstance();$isLvalue = false;$line=$character.getLine();}
 	| str = CONST_STR {$return_type = new ArrayType(CharType.getInstance(),$str.text.length()-2 );$isLvalue = false;$line=$str.getLine();}
 	| id = ID { 

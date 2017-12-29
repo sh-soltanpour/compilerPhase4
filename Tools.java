@@ -58,7 +58,6 @@ public class Tools {
           );
     }
     catch (ItemAlreadyExistsException e) {
-      System.out.println("injaiim");
       Tools.putLocalVar(name+"_temp_", type);
     }
   }
