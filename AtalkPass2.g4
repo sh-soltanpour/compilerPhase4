@@ -5,18 +5,23 @@ grammar AtalkPass2;
   }
 	 void beginScope() {
       SymbolTable.push();
-			mips.copySPToFP();
-			SymbolTable.top.setOffset(Register.FP,SymbolTable.top.getOffset(Register.SP));
+			/* mips.copySPToFP();
+			SymbolTable.top.setOffset(Register.FP,SymbolTable.top.getOffset(Register.SP)); */
+			
   }
   void endScope(){
     SymbolTable.pop();
-		if (SymbolTable.top != null)
-			mips.reverseFP(SymbolTable.top.getOffset(Register.FP));
-  }
+		Object stackPointer = mips.stackPointers.pop();
+		if (stackPointer != null){
+			mips.reverseSP((int)stackPointer * (-1));
+		}
+	 	//if (SymbolTable.top != null)
+	// 		mips.reverseFP(SymbolTable.top.getOffset(Register.FP));
+   }
 	Translator mips = new Translator();
 
 }
-program: { beginScope();} (actor | NL)* {endScope();mips.makeOutput();};
+program: { beginScope();mips.stackPointers.push(SymbolTable.top.getOffset(Register.SP)); } (actor | NL)* {endScope();mips.makeOutput();};
 
 actor:
 	{beginScope();} 'actor' ID '<' CONST_NUM '>' NL (
@@ -147,13 +152,13 @@ stm_tell:{ArrayList<Type> types = new ArrayList<Type>();}
 			}
 	};
 
-stm_write: writeToken='write' '(' var1=expr[false] ')' NL{mips.write();Tools.checkWriteArgument($var1.return_type,$writeToken.getLine());};
+stm_write: writeToken='write' '(' var1=expr[false] ')' NL{mips.write($var1.return_type);Tools.checkWriteArgument($var1.return_type,$writeToken.getLine());};
 
 stm_if_elseif_else:
-	ifToken='if' var1=expr[false]{Tools.checkConditionType($var1.return_type,$ifToken.getLine());} NL{beginScope();} statements{endScope();}
-	 (elseifToken='elseif' var2=expr[false] {Tools.checkConditionType($var2.return_type,$elseifToken.getLine());} NL {beginScope();}statements{endScope();})* (
+	ifToken='if' var1=expr[false]{mips.ifCondition();Tools.checkConditionType($var1.return_type,$ifToken.getLine());} NL{beginScope();} statements{mips.addJumpInst();endScope();mips.addLabel();}
+	 (elseifToken='elseif' var2=expr[false] {mips.elsifCondition();Tools.checkConditionType($var2.return_type,$elseifToken.getLine());} NL {beginScope();}statements{endScope();mips.addLabel();mips.addJumpInst();})* (
 		'else' NL {beginScope();}statements{endScope();}
-	)? 'end' NL;
+	)? {mips.addJumpLabel();}'end' NL;
 
 stm_foreach: {beginScope();} foreachToken='foreach' ID {SymbolTable.define();} 'in' var1=expr[false]{Tools.checkArrayOfForeach($var1.return_type,$foreachToken.getLine());} NL statements 'end' NL{endScope();};
 
@@ -296,7 +301,7 @@ expr_mem_tmp[boolean isLeft]
 expr_other[boolean isLeft]
 	returns[Type return_type, boolean isLvalue, int line]:
 	num=CONST_NUM {mips.addToStack(Integer.parseInt($num.text));$return_type = IntType.getInstance();$isLvalue = false;$line = $num.getLine(); }
-	| character=CONST_CHAR {$return_type = CharType.getInstance();$isLvalue = false;$line=$character.getLine();}
+	| character=CONST_CHAR {mips.addCharToStack($character.text.charAt(1));$return_type = CharType.getInstance();$isLvalue = false;$line=$character.getLine();}
 	| str = CONST_STR {$return_type = new ArrayType(CharType.getInstance(),$str.text.length()-2 );$isLvalue = false;$line=$str.getLine();}
 	| id = ID { 
 						$isLvalue = true;

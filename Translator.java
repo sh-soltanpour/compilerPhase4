@@ -4,6 +4,7 @@
  */
 
 import java.util.*;
+
 import java.io.*;
 
 public class Translator {
@@ -11,10 +12,21 @@ public class Translator {
   private File output;
   private ArrayList<String> instructions;
   private ArrayList<String> initInstructions;
+  public Stack<Integer> stackPointers; 
+  private Stack<Integer> ifIndex;
+  private Stack<Integer> ifsNumber;
+  private Stack<Integer> ifJumpIndex;
+  int labelCounter;
 
   public Translator() {
     instructions = new ArrayList<String>();
     initInstructions = new ArrayList<String>();
+    stackPointers = new Stack<Integer>();
+    ifIndex = new Stack<Integer>();
+    ifsNumber = new Stack<Integer>();
+    ifJumpIndex = new Stack<Integer>();
+
+    labelCounter = 0;
     output = new File("out.asm");
     try {
       output.createNewFile();
@@ -22,7 +34,15 @@ public class Translator {
       e.printStackTrace();
     }
   }
-
+  public String getLabel(){
+    String returnValue = "LABEL" + labelCounter;
+    ++labelCounter;
+    return returnValue;
+  }
+  public void reverseSP(int addr){
+    instructions.add("addi $sp, $fp," + addr);
+    // instructions.add("li $sp, " + addr);
+  }
   public void makeOutput() {
     this.addSystemCall(10);
     try {
@@ -62,7 +82,7 @@ public class Translator {
     instructions.add("# start of adding character to stack");
     instructions.add("li $a0, " + x);
     instructions.add("sw $a0, 0($sp)");
-    instructions.add("addiu $sp, $sp, -1");
+    instructions.add("addiu $sp, $sp, -4");
     instructions.add("# end of adding character to stack");
   }
 
@@ -186,22 +206,45 @@ public class Translator {
       popStack();
       instructions.add("lw $a1, 4($sp)");
       popStack();
-      if(s.equals(">")) instructions.add("slt $a2, $a1, $a0"); else instructions.add("slt $a2, $a0, $a1");
+      if(s.equals(">")) instructions.add("slt $a2, $a0, $a1"); else instructions.add("slt $a2, $a1, $a0");
       instructions.add("sw $a2, 0($sp)");
       instructions.add("addiu $sp, $sp, -4");
     }
+    // else if (s.equals("==") || s.equals("<>")){
+    //   instructions.add("lw $a0, 4($sp)");
+    //   popStack();
+    //   instructions.add("lw $a1, 4($sp)");
+    //   popStack();
+    //   instructions.add("slt $a2, $a0, $a1");
+    //   instructions.add("slt $a3, $a1, $a0");
+    //   if(s.equals("=="))instructions.add("nor $a0, $a2, $a3");
+    //   else instructions.add("or $a0, $a2, $a3");
+
+    //   instructions.add("sw $a0, 0($sp)");
+    //   instructions.add("addiu $sp, $sp, -4");
+    // }
     else if (s.equals("==") || s.equals("<>")){
       instructions.add("lw $a0, 4($sp)");
       popStack();
       instructions.add("lw $a1, 4($sp)");
       popStack();
-      instructions.add("slt $a2, $a0, $a1");
-      instructions.add("slt $a3, $a1, $a0");
-      if(s.equals("=="))instructions.add("nor $a0, $a2, $a3");
-      else instructions.add("and $a0, $a2, $a3");
+      instructions.add("sub $a2, $a1, $a0");
+      instructions.add("li $a3, 0");
+      String label1 = this.getLabel();
+      String label2 = this.getLabel();
+      instructions.add("beq, $a2, $a3, " + label1);
+      if (s.equals("=="))
+        this.addIntToStack(0);
+      else 
+        this.addIntToStack(1);
 
-      instructions.add("sw $a0, 0($sp)");
-      instructions.add("addiu $sp, $sp, -4");
+      instructions.add("j " + label2);
+      instructions.add(label1+":");
+      if (s.equals("=="))
+        this.addIntToStack(1);
+      else 
+        this.addIntToStack(0);
+      instructions.add(label2+":");
     }
     else if (s.equals("and") || s.equals("or")){
       instructions.add("lw $a0, 4($sp)");
@@ -217,15 +260,20 @@ public class Translator {
     instructions.add("# end of operation " + s);
   }
 
-  public void write() {
+  public void write(Type type) {
+    
     instructions.add("# writing");
     instructions.add("lw $a0, 4($sp)");
-    this.addSystemCall(1);
+    if (type instanceof IntType)
+      this.addSystemCall(1);
+    else
+      this.addSystemCall(11);
     popStack();
     instructions.add("addi $a0, $zero, 10");
     this.addSystemCall(11);
     instructions.add("# end of writing");
   }
+  
 
   public void addGlobalToStack(int adr) {
     //        int adr = table.getAddress(s)*(-1);
@@ -257,5 +305,43 @@ public class Translator {
     instructions.add("#start of reverseFP");
     instructions.add("li $fp,"+x);
     instructions.add("#end of reverseFP");
+  }
+  public void ifCondition(){
+    ifsNumber.push(1);
+    instructions.add("lw $a0, 4($sp)");
+    this.popStack();
+    instructions.add("li $a1, 0");
+    instructions.add("beq $a0, $a1, ");
+    this.ifIndex.push(instructions.size()-1);
+  }
+  public void elsifCondition(){
+    int number = ifsNumber.pop();
+    ifsNumber.push(number + 1);
+    instructions.add("lw $a0, 4($sp)");
+    this.popStack();
+    instructions.add("li $a1, 0");
+    instructions.add("beq $a0, $a1, ");
+    this.ifIndex.push(instructions.size()-1);
+
+  }
+  public void addLabel(){
+    String label = this.getLabel();
+    instructions.add(label + ":");
+    int index = ifIndex.pop();
+    instructions.set(index, instructions.get(index) + label);
+  }
+  public void addJumpLabel(){
+    String label = this.getLabel();
+    instructions.add(label + ":");
+    int number = ifsNumber.pop();
+    for (int i = 0; i < number; i++){
+      int index = ifJumpIndex.pop();
+      instructions.set(index, instructions.get(index) + label);
+    }
+  }
+  public void addJumpInst(){
+    instructions.add("j ");
+    this.ifJumpIndex.push(instructions.size()-1);
+
   }
 }
