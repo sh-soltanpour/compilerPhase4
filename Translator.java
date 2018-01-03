@@ -307,14 +307,17 @@ public class Translator {
     instructions.add("#end of reverseFP");
   }
   public void ifCondition(){
+    instructions.add("#ifCondition start");
     ifsNumber.push(1);
     instructions.add("lw $a0, 4($sp)");
     this.popStack();
     instructions.add("li $a1, 0");
     instructions.add("beq $a0, $a1, ");
     this.ifIndex.push(instructions.size()-1);
+    instructions.add("#ifCondition finish");
   }
   public void elsifCondition(){
+    instructions.add("#elsifCondition start");
     int number = ifsNumber.pop();
     ifsNumber.push(number + 1);
     instructions.add("lw $a0, 4($sp)");
@@ -322,15 +325,19 @@ public class Translator {
     instructions.add("li $a1, 0");
     instructions.add("beq $a0, $a1, ");
     this.ifIndex.push(instructions.size()-1);
+    instructions.add("#elsifCondition finish");
 
   }
   public void addLabel(){
+    instructions.add("#addLabel start");
     String label = this.getLabel();
     instructions.add(label + ":");
     int index = ifIndex.pop();
     instructions.set(index, instructions.get(index) + label);
+    instructions.add("#addLabel finish");
   }
   public void addJumpLabel(){
+    instructions.add("#addJumpLabel start");
     String label = this.getLabel();
     instructions.add(label + ":");
     int number = ifsNumber.pop();
@@ -338,10 +345,12 @@ public class Translator {
       int index = ifJumpIndex.pop();
       instructions.set(index, instructions.get(index) + label);
     }
+    instructions.add("#addJumpfinish start");
   }
   public void addJumpInst(){
+    instructions.add("#addJumpInst start");
     instructions.add("j ");
     this.ifJumpIndex.push(instructions.size()-1);
-
+    instructions.add("#addJumpInst finish");
   }
 }

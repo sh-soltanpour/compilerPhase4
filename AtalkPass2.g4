@@ -155,8 +155,8 @@ stm_tell:{ArrayList<Type> types = new ArrayList<Type>();}
 stm_write: writeToken='write' '(' var1=expr[false] ')' NL{mips.write($var1.return_type);Tools.checkWriteArgument($var1.return_type,$writeToken.getLine());};
 
 stm_if_elseif_else:
-	ifToken='if' var1=expr[false]{mips.ifCondition();Tools.checkConditionType($var1.return_type,$ifToken.getLine());} NL{beginScope();} statements{mips.addJumpInst();endScope();mips.addLabel();}
-	 (elseifToken='elseif' var2=expr[false] {mips.elsifCondition();Tools.checkConditionType($var2.return_type,$elseifToken.getLine());} NL {beginScope();}statements{endScope();mips.addLabel();mips.addJumpInst();})* (
+	ifToken='if' var1=expr[false]{mips.ifCondition();Tools.checkConditionType($var1.return_type,$ifToken.getLine());} NL{beginScope();} statements{endScope();mips.addJumpInst();mips.addLabel();}
+	 (elseifToken='elseif' var2=expr[false] {mips.elsifCondition();Tools.checkConditionType($var2.return_type,$elseifToken.getLine());} NL {beginScope();}statements{endScope();mips.addJumpInst();mips.addLabel();})* (
 		'else' NL {beginScope();}statements{endScope();}
 	)? {mips.addJumpLabel();}'end' NL;
 
