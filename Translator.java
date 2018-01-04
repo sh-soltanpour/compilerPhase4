@@ -376,4 +376,34 @@ public class Translator {
     instructions.add("addiu $sp, $sp, -4");
     instructions.add("# end of adding element to stack");
   }
+  public void assignCommandArray(int numOfElements){
+    int offset = (numOfElements+1) * 4;
+    instructions.add("# start of assign command in Array");
+    instructions.add("addi $sp, $sp," + offset);
+    instructions.add("lw $a1, 0($sp)");
+    instructions.add("addi $sp, $sp,-4");
+    // instructions.add("addi $sp, $sp," + ((-1)*offset));
+    for (int i = 0; i < numOfElements; i++){
+      instructions.add("lw $a0, 0($sp)");
+      instructions.add("addi $sp, $sp, -4");
+
+      // instructions.add("lw $a0, 4($sp)");
+      // popStack();
+      instructions.add("sw $a0, 0($a1)");
+      instructions.add("addi $a1, $a1, -4");
+    }
+    instructions.add("# end of adding element to stack");
+  }
+  public void read(int num){
+    for (int i = 0; i < num; i++){
+      this.addSystemCall(12);
+      instructions.add("sw $v0 , 0($sp)");
+      instructions.add("addiu $sp, $sp, -4");
+    }
+  }
+  public void addStringToStack(String str){
+    for (int i = 1;i < str.length()-1; i++){
+      this.addCharToStack(str.charAt(i));
+    }
+  }
 }

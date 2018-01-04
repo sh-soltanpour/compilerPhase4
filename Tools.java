@@ -270,13 +270,32 @@ public class Tools {
           type = castedItem.getType();
         }
         for (int i = 0; i < elementsNumber; i++) {
-          if (type instanceof IntType)
+          if (type instanceof IntType){
             mips.addIntToStack(0);
+          }
           else if (type instanceof CharType)
             mips.addCharToStack('\0');
         }
         System.out.println("Number of " + elementsNumber);
       }
     }
+  }
+  static void assignCommand(Translator mips, Type type){
+    if (!(type instanceof ArrayType)){
+      mips.assignCommand();
+      return;
+    }
+    ArrayList<Integer> sizes = Tools.getSizesList(type);
+    int numOfElements = Tools.calcNumofElements(sizes,sizes.size());
+    mips.assignCommandArray(numOfElements);
+  }
+  static ArrayList<Integer> getSizesList(Type type){
+    ArrayList<Integer> sizes = new ArrayList<Integer>();
+    while (type instanceof ArrayType) {
+      ArrayType castedItem = (ArrayType) type;
+      sizes.add(castedItem.getWidth());
+      type = castedItem.getType();
+    }
+    return sizes;
   }
 }

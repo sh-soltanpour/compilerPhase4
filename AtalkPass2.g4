@@ -174,7 +174,7 @@ expr[boolean isLeft]
 
 expr_assign[boolean isLeft]
 	returns[Type return_type, boolean isLvalue, int line]:
-	var1=expr_or[true] op='=' var2=expr_assign[false] {mips.assignCommand();Tools.checkLvalue($var1.isLvalue,$op.getLine());$return_type = Tools.expr_assign_typeCheck($var1.return_type, $var2.return_type,$op.getLine());}
+	var1=expr_or[true] op='=' var2=expr_assign[false] {Tools.assignCommand(mips,$var1.return_type);Tools.checkLvalue($var1.isLvalue,$op.getLine());$return_type = Tools.expr_assign_typeCheck($var1.return_type, $var2.return_type,$op.getLine());}
 	| var3=expr_or [false]
 	{
 		$isLvalue = $var3.isLvalue;$return_type = $expr_or.return_type;
@@ -306,7 +306,7 @@ expr_other[boolean isLeft]
 	returns[Type return_type, boolean isLvalue, int line,boolean idSeen, String idName]:
 	num=CONST_NUM {mips.addToStack(Integer.parseInt($num.text));$return_type = IntType.getInstance();$isLvalue = false;$line = $num.getLine(); $idSeen = false;}
 	| character=CONST_CHAR {mips.addCharToStack($character.text.charAt(1));$return_type = CharType.getInstance();$isLvalue = false;$line=$character.getLine();$idSeen = false;}
-	| str = CONST_STR {$return_type = new ArrayType(CharType.getInstance(),$str.text.length()-2 );$isLvalue = false;$line=$str.getLine();$idSeen = false;}
+	| str = CONST_STR {mips.addStringToStack($str.text);$return_type = new ArrayType(CharType.getInstance(),$str.text.length()-2 );$isLvalue = false;$line=$str.getLine();$idSeen = false;}
 	| id = ID { 
 						$idName = $id.text;
 						$idSeen = true;
@@ -336,7 +336,7 @@ expr_other[boolean isLeft]
 	|{$isLvalue = false;ArrayList <Type> types = new ArrayList<Type>();} openBr='{' var1=expr[$isLeft]{types.add($var1.return_type);}
 	 (',' var2=expr[$isLeft]{types.add($var2.return_type);})* '}' {$return_type = Tools.arrayInitTypeCheck(types,$openBr.getLine());$line = $openBr.getLine();$idSeen = false;}
 	
-	| 'read' openPr='(' num = CONST_NUM ')' {$isLvalue = false;$return_type = new ArrayType(CharType.getInstance(),Integer.parseInt($num.text));$line=$openPr.getLine();$idSeen = false;}
+	| 'read' openPr='(' num = CONST_NUM ')' {mips.read(Integer.parseInt($num.text));$isLvalue = false;$return_type = new ArrayType(CharType.getInstance(),Integer.parseInt($num.text));$line=$openPr.getLine();$idSeen = false;}
 	| openPr='(' var1=expr[$isLeft] ')' {$isLvalue = $var1.isLvalue;$return_type = $var1.return_type;$isLvalue = true;$line=$openPr.getLine();$idSeen = false;} ;
 
 CONST_NUM: [0-9]+;
