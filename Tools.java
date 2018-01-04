@@ -193,7 +193,13 @@ public class Tools {
       System.out.println("line" + line + ": foreach parameter is not iterable");
     }
   }
-
+  static int calcNumofElements(ArrayList<Integer> sizes , int num){
+    int result = 1;
+    for(int i = 0 ; i<num ; i++){
+      result *= sizes.get(sizes.size()-1-i);
+    }
+    return result;
+  }
   static void addVariableToStack(Translator mips, String name, int count, boolean isLeft) {
     SymbolTableVariableItemBase item = (SymbolTableVariableItemBase) SymbolTable.top.get(name);
 
@@ -221,20 +227,23 @@ public class Tools {
     }
     int sizesIndex = sizes.size() - 1;
     int size = 4;
+    int countemp = count; 
     //pop stack
     mips.addInstruction("li $a1, 0");
-    while (sizesIndex >= 0) {
+    while (countemp > 0) {
       mips.addInstruction("li $a0, " + size);
       mips.addInstruction("lw $a2, 4($sp)");
       mips.popStack();
       mips.addInstruction("mul $a3, $a0, $a2");
       mips.addInstruction("add $a1, $a1, $a3");
       size *= sizes.get(sizesIndex--);
+      countemp--;
     } // Akharesh offset to $a1 e
     mips.addInstruction("neg $a1, $a1");
     if (item.getBaseRegister() == Register.SP) {
       if (!isLeft) {
-        mips.addElementToStack(item.getOffset() * -1);
+        int numOfElements = Tools.calcNumofElements(sizes,sizes.size()-count);
+        mips.addElementToStack(item.getOffset() * -1 , numOfElements);
       } else {
         mips.addElementAddressToStack(item.getOffset() * -1);
       }

@@ -356,13 +356,16 @@ public class Translator {
     this.ifJumpIndex.push(instructions.size()-1);
     instructions.add("#addJumpInst finish");
   }
-  public void addElementToStack( int adr) {
+  public void addElementToStack( int adr , int numOfElements) {
     instructions.add("# start of adding element to stack");
     instructions.add("addi $a0 ,$a1 ,"+ adr );
     instructions.add("add $a1, $a0, $fp");
-    instructions.add("lw $a0, 0($a1)");
-    instructions.add("sw $a0, 0($sp)");
-    instructions.add("addiu $sp, $sp, -4");
+    for(int i = 0 ; i < numOfElements ; i++){
+      instructions.add("lw $a0, 0($a1)");
+      instructions.add("sw $a0, 0($sp)");
+      instructions.add("addiu $sp, $sp, -4");
+      instructions.add("addiu $a1, $a1, -4");
+    }
     instructions.add("# end of adding element to stack");
   }
   public void addElementAddressToStack( int adr) {
