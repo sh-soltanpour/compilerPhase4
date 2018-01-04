@@ -291,6 +291,10 @@ expr_mem[boolean isLeft]
 		$line = $var1.line;
 		$return_type = Tools.expr_mem_typeCheck($expr_other.return_type,$expr_mem_tmp.count,$var1.line);
 		$isLvalue = $var1.isLvalue;
+		
+		 if ($var1.idSeen)
+		 	Tools.addVariableToStack(mips,$var1.idName,$expr_mem_tmp.count,$isLeft);
+
 	};
 
 expr_mem_tmp[boolean isLeft]
@@ -299,11 +303,13 @@ expr_mem_tmp[boolean isLeft]
 	| {$count = 0;};
 
 expr_other[boolean isLeft]
-	returns[Type return_type, boolean isLvalue, int line]:
-	num=CONST_NUM {mips.addToStack(Integer.parseInt($num.text));$return_type = IntType.getInstance();$isLvalue = false;$line = $num.getLine(); }
-	| character=CONST_CHAR {mips.addCharToStack($character.text.charAt(1));$return_type = CharType.getInstance();$isLvalue = false;$line=$character.getLine();}
-	| str = CONST_STR {$return_type = new ArrayType(CharType.getInstance(),$str.text.length()-2 );$isLvalue = false;$line=$str.getLine();}
+	returns[Type return_type, boolean isLvalue, int line,boolean idSeen, String idName]:
+	num=CONST_NUM {mips.addToStack(Integer.parseInt($num.text));$return_type = IntType.getInstance();$isLvalue = false;$line = $num.getLine(); $idSeen = false;}
+	| character=CONST_CHAR {mips.addCharToStack($character.text.charAt(1));$return_type = CharType.getInstance();$isLvalue = false;$line=$character.getLine();$idSeen = false;}
+	| str = CONST_STR {$return_type = new ArrayType(CharType.getInstance(),$str.text.length()-2 );$isLvalue = false;$line=$str.getLine();$idSeen = false;}
 	| id = ID { 
+						$idName = $id.text;
+						$idSeen = true;
 						$isLvalue = true;
 						$line = $id.getLine();
             SymbolTableItem item = SymbolTable.top.get($id.text);
@@ -318,20 +324,20 @@ expr_other[boolean isLeft]
 								$return_type = var.getVariable().getType();
 								$isLvalue = var.isLvalue();
 								if (var.getBaseRegister() == Register.SP){
-                    if (!$isLeft) mips.addToStack($id.text, var.getOffset()*-1);
-                    else mips.addAddressToStack($id.text, var.getOffset()*-1);
+                    //if (!$isLeft) mips.addToStack($id.text, var.getOffset()*-1);
+                    //else mips.addAddressToStack($id.text, var.getOffset()*-1);
                 }
                 else {
-                    if ($isLvalue == false) mips.addGlobalToStack(var.getOffset());
-                    else mips.addGlobalAddressToStack($id.text, var.getOffset());
+                    //if ($isLvalue == false) mips.addGlobalToStack(var.getOffset());
+                    //else mips.addGlobalAddressToStack($id.text, var.getOffset());
                 }
 						}
   }
 	|{$isLvalue = false;ArrayList <Type> types = new ArrayList<Type>();} openBr='{' var1=expr[$isLeft]{types.add($var1.return_type);}
-	 (',' var2=expr[$isLeft]{types.add($var2.return_type);})* '}' {$return_type = Tools.arrayInitTypeCheck(types,$openBr.getLine());$line = $openBr.getLine();}
+	 (',' var2=expr[$isLeft]{types.add($var2.return_type);})* '}' {$return_type = Tools.arrayInitTypeCheck(types,$openBr.getLine());$line = $openBr.getLine();$idSeen = false;}
 	
-	| 'read' openPr='(' num = CONST_NUM ')' {$isLvalue = false;$return_type = new ArrayType(CharType.getInstance(),Integer.parseInt($num.text));$line=$openPr.getLine();}
-	| openPr='(' var1=expr[$isLeft] ')' {$isLvalue = $var1.isLvalue;$return_type = $var1.return_type;$isLvalue = true;$line=$openPr.getLine();} ;
+	| 'read' openPr='(' num = CONST_NUM ')' {$isLvalue = false;$return_type = new ArrayType(CharType.getInstance(),Integer.parseInt($num.text));$line=$openPr.getLine();$idSeen = false;}
+	| openPr='(' var1=expr[$isLeft] ')' {$isLvalue = $var1.isLvalue;$return_type = $var1.return_type;$isLvalue = true;$line=$openPr.getLine();$idSeen = false;} ;
 
 CONST_NUM: [0-9]+;
 

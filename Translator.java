@@ -34,6 +34,9 @@ public class Translator {
       e.printStackTrace();
     }
   }
+  public void addInstruction(String inst){
+    instructions.add(inst);
+  }
   public String getLabel(){
     String returnValue = "LABEL" + labelCounter;
     ++labelCounter;
@@ -352,5 +355,22 @@ public class Translator {
     instructions.add("j ");
     this.ifJumpIndex.push(instructions.size()-1);
     instructions.add("#addJumpInst finish");
+  }
+  public void addElementToStack( int adr) {
+    instructions.add("# start of adding element to stack");
+    instructions.add("addi $a0 ,$a1 ,"+ adr );
+    instructions.add("add $a1, $a0, $fp");
+    instructions.add("lw $a0, 0($a1)");
+    instructions.add("sw $a0, 0($sp)");
+    instructions.add("addiu $sp, $sp, -4");
+    instructions.add("# end of adding element to stack");
+  }
+  public void addElementAddressToStack( int adr) {
+    instructions.add("# start of adding element to stack");
+    instructions.add("addi $a0 ,$a1 ,"+ adr );
+    instructions.add("add $a1, $a0, $fp");
+    instructions.add("sw $a1 , 0($sp)");
+    instructions.add("addiu $sp, $sp, -4");
+    instructions.add("# end of adding element to stack");
   }
 }
