@@ -424,4 +424,31 @@ public class Translator {
       this.addCharToStack(str.charAt(i));
     }
   }
+  public void equalityCheckArray(int size, String op){
+    String label1 = this.getLabel();
+    String label2 = this.getLabel();
+    instructions.add("move $a2, $sp");
+    for (int i = 0; i < size; i++){
+      instructions.add("lw $a0, 4($sp)");
+      instructions.add("lw $a1, " + ((size+1)*4)+"($sp)");
+      instructions.add("bne $a0, $a1, " + label1);
+      popStack();
+    }
+    instructions.add("move $sp, $a2");
+    for (int i = 0; i < 2 * size; i++){
+      popStack();
+    }
+    if (op .equals("=="))instructions.add("li $a0, 1");
+    else instructions.add("li $a0, 0");
+    instructions.add("sw $a0, 0($sp)");
+    instructions.add("addiu $sp, $sp, -4");
+    instructions.add("j " + label2);
+    
+    instructions.add(label1 + ":");
+    if (op.equals("==")) instructions.add("li $a0, 0");
+    else instructions.add("li $a0, 1");
+    instructions.add("sw $a0, 0($sp)");
+    instructions.add("addiu $sp, $sp, -4");
+    instructions.add(label2 + ":");
+  }
 }

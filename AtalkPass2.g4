@@ -224,7 +224,7 @@ expr_eq[boolean isLeft]
 
 expr_eq_tmp[boolean isLeft]
 	returns[Type return_type, boolean isLvalue]: 
-	op=('==' | '<>') var1=expr_cmp[$isLeft]{mips.operationCommand($op.text);} var2=expr_eq_tmp[$isLeft] {$isLvalue = false;$return_type = Tools.expr_eq_tmp_typeCheck($var1.return_type, $var2.return_type,$op.getLine());}
+	op=('==' | '<>') var1=expr_cmp[$isLeft]{Tools.equalityCommand(mips,$op.text,$var1.return_type);} var2=expr_eq_tmp[$isLeft] {$isLvalue = false;$return_type = Tools.expr_eq_tmp_typeCheck($var1.return_type, $var2.return_type,$op.getLine());}
 	| {$isLvalue = true;$return_type = null;};
 
 expr_cmp[boolean isLeft]

@@ -298,4 +298,16 @@ public class Tools {
     }
     return sizes;
   }
+  static void equalityCommand(Translator mips, String operator, Type type){
+    if ((type instanceof CharType) || (type instanceof IntType)){
+      mips.assignCommand();
+      return;
+    }
+    ArrayList <Integer> sizes = getSizesList(type);
+    int size = 1;
+    for (int i = 0; i < sizes.size(); i++)
+      size *= sizes.get(i);
+    mips.equalityCheckArray(size, operator);
+
+  }
 }
