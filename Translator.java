@@ -266,12 +266,30 @@ public class Translator {
   public void write(Type type) {
     
     instructions.add("# writing");
-    instructions.add("lw $a0, 4($sp)");
-    if (type instanceof IntType)
+    
+    if (type instanceof IntType){
+      instructions.add("lw $a0, 4($sp)");
+      popStack();
       this.addSystemCall(1);
-    else
+    }
+    else if (type instanceof CharType){
+      instructions.add("lw $a0, 4($sp)");
+      popStack();
       this.addSystemCall(11);
-    popStack();
+    }
+    else if (type instanceof ArrayType){
+      int numOfElements = ((ArrayType)type).getWidth(); 
+      int offset = numOfElements * (4);
+      instructions.add("addiu $sp, $sp," + offset);
+      for (int i = 0; i < numOfElements; i++){
+        instructions.add("lw $a0, 0($sp)");
+        instructions.add("addiu $sp, $sp,-4");
+        this.addSystemCall(11);
+      }
+      for (int i = 0; i < numOfElements; i++){
+        popStack();
+      }
+    }
     instructions.add("addi $a0, $zero, 10");
     this.addSystemCall(11);
     instructions.add("# end of writing");
