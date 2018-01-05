@@ -410,7 +410,23 @@ public class Translator {
       instructions.add("sw $a0, 0($a1)");
       instructions.add("addi $a1, $a1, -4");
     }
-    instructions.add("# end of adding element to stack");
+    instructions.add("# end of assign command in Array");
+  }
+  public void assignCommandArrayVardef(int numOfElements){
+    System.out.println("NUM OF ELEMETNS: " + numOfElements);
+    int offset = (numOfElements) * 4;
+    instructions.add("# start of assign command in Array var def");
+    // instructions.add("addi $sp, $sp," + offset);
+    instructions.add("lw $a1, 4($sp)");
+    popStack();
+    instructions.add("addi $sp, $sp," + offset);
+    for (int i = 0; i < numOfElements; i++){
+      instructions.add("lw $a0, 0($sp)");
+      instructions.add("addi $sp, $sp, -4");
+      instructions.add("sw $a0, 0($a1)");
+      instructions.add("addi $a1, $a1, -4");
+    }
+    instructions.add("# end of assign command in Array var def");
   }
   public void read(int num){
     for (int i = 0; i < num; i++){

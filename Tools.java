@@ -308,6 +308,18 @@ public class Tools {
     for (int i = 0; i < sizes.size(); i++)
       size *= sizes.get(i);
     mips.equalityCheckArray(size, operator);
-
+  }
+  public static void assignCommandInVardef(Translator mips, Type type){
+    if (!(type instanceof ArrayType)){
+      mips.assignCommandInVardef();
+      return;
+    }
+    ArrayList<Integer> sizes = getSizesList(type);
+    int result = 1;
+    for (int i = 0; i < sizes.size(); i++){
+      result *= sizes.get(i);
+    }
+    mips.assignCommandArrayVardef(result);
+    
   }
 }

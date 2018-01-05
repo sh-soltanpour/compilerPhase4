@@ -104,9 +104,11 @@ stm_vardef:
 		if(item instanceof SymbolTableVariableItemBase){
 				SymbolTableVariableItemBase var = (SymbolTableVariableItemBase) item;
 				Tools.expr_assign_typeCheck(var.getVariable().getType(), $var2.return_type,$id1.getLine());
-				mips.addAddressToStack($id1.text, var.getOffset()*-1);
+				//mips.addAddressToStack($id1.text, var.getOffset()*-1);
+				Tools.addVariableToStack(mips, $id1.text,0,true);
 		}
-		mips.assignCommandInVardef();		
+		Tools.assignCommandInVardef(mips, $var2.return_type);
+		//mips.assignCommandInVardef();		
 	}
 	)? (
 	',' id2=ID { SymbolTable.define();Tools.addLocalToStack(mips,$id2.text); } ('=' var2=expr[false]
