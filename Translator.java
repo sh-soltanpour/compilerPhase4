@@ -129,7 +129,7 @@ public class Translator {
     instructions.add("# end syscall");
   }
 
-  public void assignCommand() {
+  public void assignCommand(boolean isLeftMost) {
     instructions.add("# start of assign");
     instructions.add("lw $a0, 4($sp)");
     popStack();
@@ -138,7 +138,8 @@ public class Translator {
     instructions.add("sw $a0, 0($a1)");
     instructions.add("sw $a0, 0($sp)");
     instructions.add("addiu $sp, $sp, -4");
-    popStack();
+    if (isLeftMost)
+      popStack();
     instructions.add("# end of assign");
   }
   public void assignCommandInVardef(){
@@ -394,7 +395,7 @@ public class Translator {
     instructions.add("addiu $sp, $sp, -4");
     instructions.add("# end of adding element to stack");
   }
-  public void assignCommandArray(int numOfElements){
+  public void assignCommandArray(int numOfElements, boolean isLeftMost){
     int offset = (numOfElements+1) * 4;
     instructions.add("# start of assign command in Array");
     instructions.add("addi $sp, $sp," + offset);
@@ -409,6 +410,10 @@ public class Translator {
       // popStack();
       instructions.add("sw $a0, 0($a1)");
       instructions.add("addi $a1, $a1, -4");
+    }
+    if (isLeftMost){
+      for (int i = 0; i < numOfElements+1; i++)
+        popStack();
     }
     instructions.add("# end of assign command in Array");
   }

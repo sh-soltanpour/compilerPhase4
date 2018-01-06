@@ -280,14 +280,14 @@ public class Tools {
       }
     }
   }
-  static void assignCommand(Translator mips, Type type){
+  static void assignCommand(Translator mips, Type type, boolean isLeftMost){
     if (!(type instanceof ArrayType)){
-      mips.assignCommand();
+      mips.assignCommand(isLeftMost);
       return;
     }
     ArrayList<Integer> sizes = Tools.getSizesList(type);
     int numOfElements = Tools.calcNumofElements(sizes,sizes.size());
-    mips.assignCommandArray(numOfElements);
+    mips.assignCommandArray(numOfElements, isLeftMost);
   }
   static ArrayList<Integer> getSizesList(Type type){
     ArrayList<Integer> sizes = new ArrayList<Integer>();
@@ -300,7 +300,7 @@ public class Tools {
   }
   static void equalityCommand(Translator mips, String operator, Type type){
     if ((type instanceof CharType) || (type instanceof IntType)){
-      mips.assignCommand();
+      mips.operationCommand(operator);
       return;
     }
     ArrayList <Integer> sizes = getSizesList(type);
