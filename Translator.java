@@ -396,6 +396,26 @@ public class Translator {
     instructions.add("addiu $sp, $sp, -4");
     instructions.add("# end of adding element to stack");
   }
+  public void addGlobalElementToStack( int adr , int numOfElements) {
+    instructions.add("# start of adding global element to stack");
+    instructions.add("addi $a0 ,$a1 ,"+ adr );
+    instructions.add("add $a1, $a0, $gp");
+    for(int i = 0 ; i < numOfElements ; i++){
+      instructions.add("lw $a0, 0($a1)");
+      instructions.add("sw $a0, 0($sp)");
+      instructions.add("addiu $sp, $sp, -4");
+      instructions.add("addiu $a1, $a1, -4");
+    }
+    instructions.add("# end of adding global element to stack");
+  }
+  public void addGlobalElementAddressToStack( int adr) {
+    instructions.add("# start of adding global element address to stack");
+    instructions.add("addi $a0 ,$a1 ,"+ adr );
+    instructions.add("add $a1, $a0, $gp");
+    instructions.add("sw $a1 , 0($sp)");
+    instructions.add("addiu $sp, $sp, -4");
+    instructions.add("# end of adding element address to stack");
+  }
   public void assignCommandArray(int numOfElements, boolean isLeftMost){
     int offset = (numOfElements+1) * 4;
     instructions.add("# start of assign command in Array");
@@ -413,12 +433,10 @@ public class Translator {
       instructions.add("addi $a1, $a1, -4");
     }
     if (isLeftMost){
-      System.out.println("isLeftMost = true");
       for (int i = 0; i < numOfElements+1; i++)
         popStack();
     }
     else {
-      System.out.println("isLeftMost = false");
       int offset2 = (numOfElements) * 4;
       instructions.add("addi $sp, $sp," + offset2);
       for (int i = 0; i < numOfElements; i++){
@@ -431,7 +449,6 @@ public class Translator {
     instructions.add("# end of assign command in Array");
   }
   public void assignCommandArrayVardef(int numOfElements){
-    System.out.println("NUM OF ELEMETNS: " + numOfElements);
     int offset = (numOfElements) * 4;
     instructions.add("# start of assign command in Array var def");
     // instructions.add("addi $sp, $sp," + offset);

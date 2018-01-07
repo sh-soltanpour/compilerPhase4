@@ -241,8 +241,8 @@ public class Tools {
       size *= sizes.get(sizesIndex--);
       countemp--;
     } // Akharesh offset to $a1 e
-    mips.addInstruction("neg $a1, $a1");
     if (item.getBaseRegister() == Register.SP) {
+      mips.addInstruction("neg $a1, $a1");  
       if (!isLeft) {
         int numOfElements = Tools.calcNumofElements(sizes, sizes.size() - count);
         mips.addElementToStack(item.getOffset() * -1, numOfElements);
@@ -250,9 +250,14 @@ public class Tools {
         mips.addElementAddressToStack(item.getOffset() * -1);
       }
     }
-    // else if (item.getBaseRegister() == Register.GP){
-
-    // }
+     else if (item.getBaseRegister() == Register.GP){
+      if (!isLeft) {
+        int numOfElements = Tools.calcNumofElements(sizes, sizes.size() - count);
+        mips.addGlobalElementToStack(item.getOffset(), numOfElements);
+      } else {
+        mips.addGlobalElementAddressToStack(item.getOffset());
+      }
+     }
   }
 
   static void addLocalToStack(Translator mips, String name) {
@@ -277,7 +282,6 @@ public class Tools {
           } else if (type instanceof CharType)
             mips.addCharToStack('\0');
         }
-        System.out.println("Number of " + elementsNumber);
       }
     }
   }
