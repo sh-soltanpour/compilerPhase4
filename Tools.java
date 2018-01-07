@@ -193,13 +193,15 @@ public class Tools {
       System.out.println("line" + line + ": foreach parameter is not iterable");
     }
   }
-  static int calcNumofElements(ArrayList<Integer> sizes , int num){
+
+  static int calcNumofElements(ArrayList<Integer> sizes, int num) {
     int result = 1;
-    for(int i = 0 ; i<num ; i++){
-      result *= sizes.get(sizes.size()-1-i);
+    for (int i = 0; i < num; i++) {
+      result *= sizes.get(sizes.size() - 1 - i);
     }
     return result;
   }
+
   static void addVariableToStack(Translator mips, String name, int count, boolean isLeft) {
     SymbolTableVariableItemBase item = (SymbolTableVariableItemBase) SymbolTable.top.get(name);
 
@@ -227,7 +229,7 @@ public class Tools {
     }
     int sizesIndex = sizes.size() - 1;
     int size = 4;
-    int countemp = count; 
+    int countemp = count;
     //pop stack
     mips.addInstruction("li $a1, 0");
     while (countemp > 0) {
@@ -242,8 +244,8 @@ public class Tools {
     mips.addInstruction("neg $a1, $a1");
     if (item.getBaseRegister() == Register.SP) {
       if (!isLeft) {
-        int numOfElements = Tools.calcNumofElements(sizes,sizes.size()-count);
-        mips.addElementToStack(item.getOffset() * -1 , numOfElements);
+        int numOfElements = Tools.calcNumofElements(sizes, sizes.size() - count);
+        mips.addElementToStack(item.getOffset() * -1, numOfElements);
       } else {
         mips.addElementAddressToStack(item.getOffset() * -1);
       }
@@ -270,26 +272,27 @@ public class Tools {
           type = castedItem.getType();
         }
         for (int i = 0; i < elementsNumber; i++) {
-          if (type instanceof IntType){
+          if (type instanceof IntType) {
             mips.addIntToStack(0);
-          }
-          else if (type instanceof CharType)
+          } else if (type instanceof CharType)
             mips.addCharToStack('\0');
         }
         System.out.println("Number of " + elementsNumber);
       }
     }
   }
-  static void assignCommand(Translator mips, Type type, boolean isLeftMost){
-    if (!(type instanceof ArrayType)){
+
+  static void assignCommand(Translator mips, Type type, boolean isLeftMost) {
+    if (!(type instanceof ArrayType)) {
       mips.assignCommand(isLeftMost);
       return;
     }
     ArrayList<Integer> sizes = Tools.getSizesList(type);
-    int numOfElements = Tools.calcNumofElements(sizes,sizes.size());
+    int numOfElements = Tools.calcNumofElements(sizes, sizes.size());
     mips.assignCommandArray(numOfElements, isLeftMost);
   }
-  static ArrayList<Integer> getSizesList(Type type){
+
+  static ArrayList<Integer> getSizesList(Type type) {
     ArrayList<Integer> sizes = new ArrayList<Integer>();
     while (type instanceof ArrayType) {
       ArrayType castedItem = (ArrayType) type;
@@ -298,28 +301,29 @@ public class Tools {
     }
     return sizes;
   }
-  static void equalityCommand(Translator mips, String operator, Type type){
-    if ((type instanceof CharType) || (type instanceof IntType)){
+
+  static void equalityCommand(Translator mips, String operator, Type type) {
+    if ((type instanceof CharType) || (type instanceof IntType)) {
       mips.operationCommand(operator);
       return;
     }
-    ArrayList <Integer> sizes = getSizesList(type);
+    ArrayList<Integer> sizes = getSizesList(type);
     int size = 1;
     for (int i = 0; i < sizes.size(); i++)
       size *= sizes.get(i);
     mips.equalityCheckArray(size, operator);
   }
-  public static void assignCommandInVardef(Translator mips, Type type){
-    if (!(type instanceof ArrayType)){
+
+  public static void assignCommandInVardef(Translator mips, Type type) {
+    if (!(type instanceof ArrayType)) {
       mips.assignCommandInVardef();
       return;
     }
     ArrayList<Integer> sizes = getSizesList(type);
     int result = 1;
-    for (int i = 0; i < sizes.size(); i++){
+    for (int i = 0; i < sizes.size(); i++) {
       result *= sizes.get(i);
     }
     mips.assignCommandArrayVardef(result);
-    
-  }
+  } 
 }

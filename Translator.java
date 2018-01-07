@@ -138,8 +138,9 @@ public class Translator {
     instructions.add("sw $a0, 0($a1)");
     instructions.add("sw $a0, 0($sp)");
     instructions.add("addiu $sp, $sp, -4");
-    if (isLeftMost)
+    if (isLeftMost){
       popStack();
+    }
     instructions.add("# end of assign");
   }
   public void assignCommandInVardef(){
@@ -412,8 +413,20 @@ public class Translator {
       instructions.add("addi $a1, $a1, -4");
     }
     if (isLeftMost){
+      System.out.println("isLeftMost = true");
       for (int i = 0; i < numOfElements+1; i++)
         popStack();
+    }
+    else {
+      System.out.println("isLeftMost = false");
+      int offset2 = (numOfElements) * 4;
+      instructions.add("addi $sp, $sp," + offset2);
+      for (int i = 0; i < numOfElements; i++){
+        instructions.add("lw $a0, 0($sp)");
+        instructions.add("sw $a0, 4($sp)");
+        instructions.add("addi $sp, $sp, -4");
+      }
+      instructions.add("addi $sp, $sp, 4");
     }
     instructions.add("# end of assign command in Array");
   }
