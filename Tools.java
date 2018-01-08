@@ -242,22 +242,21 @@ public class Tools {
       countemp--;
     } // Akharesh offset to $a1 e
     if (item.getBaseRegister() == Register.SP) {
-      mips.addInstruction("neg $a1, $a1");  
+      mips.addInstruction("neg $a1, $a1");
       if (!isLeft) {
         int numOfElements = Tools.calcNumofElements(sizes, sizes.size() - count);
         mips.addElementToStack(item.getOffset() * -1, numOfElements);
       } else {
         mips.addElementAddressToStack(item.getOffset() * -1);
       }
-    }
-     else if (item.getBaseRegister() == Register.GP){
+    } else if (item.getBaseRegister() == Register.GP) {
       if (!isLeft) {
         int numOfElements = Tools.calcNumofElements(sizes, sizes.size() - count);
         mips.addGlobalElementToStack(item.getOffset(), numOfElements);
       } else {
         mips.addGlobalElementAddressToStack(item.getOffset());
       }
-     }
+    }
   }
 
   static void addLocalToStack(Translator mips, String name) {
@@ -329,5 +328,14 @@ public class Tools {
       result *= sizes.get(i);
     }
     mips.assignCommandArrayVardef(result);
-  } 
+  }
+
+  public static void addReceiverLabel(Translator mips, String actorName, String receiverName, ArrayList<Type> types) {
+    String label = actorName + "_" + receiverName + "_";
+    for (int i = 0; i < types.size(); i++){
+      label += types.get(i).toString();
+    }
+    mips.addInstruction(label + ":");
+  }
+
 }
