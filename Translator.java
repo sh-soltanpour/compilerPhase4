@@ -73,9 +73,10 @@ public class Translator {
   }
 
   public void addMessageToActorQueue(String actorName, SymbolTableReceiverItem receiverItem) {
-    String recKey = receiverItem.getKey();
-    int hashIndex = recKey.indexOf('#');
-    recKey = recKey.substring(0, hashIndex) + '_' + recKey.substring(hashIndex);
+    String recKeys = receiverItem.getKey();
+    int hashIndex = recKeys.indexOf('#');
+    StringBuilder recKey = new StringBuilder(recKeys);
+    recKey.setCharAt(hashIndex, '_');
 
     instructions.add("#start of adding message to actor queue, actorName : " + actorName + " rec Key : " + recKey);
     instructions.add("la $a0," + actorName); //a0 = sare PCB
@@ -135,7 +136,7 @@ public class Translator {
     int hashIndex = recKey.indexOf('#');
     recKey = recKey.substring(0, hashIndex) + '_' + recKey.substring(hashIndex);
 
-    initInstructions.add("#start of adding message to actor queue, actorName : " + actorName + " rec Key : " + recKey);
+    initInstructions.add("#start of adding init message to actor queue, actorName : " + actorName + " rec Key : " + recKey);
     initInstructions.add("la $a0, " + actorName); //a0 = sare PCB
     initInstructions.add("la $a1, " + actorName + "_" + recKey); // sare receiver
 
@@ -153,7 +154,7 @@ public class Translator {
 
     addReceiverArgumentsToHeap(receiverItem);
 
-    initInstructions.add("#end of adding message to actor queue, actorName : " + actorName + " rec Key : " + recKey);
+    initInstructions.add("#end of adding init message to actor queue, actorName : " + actorName + " rec Key : " + recKey);
   }
 
   public void addReceiverArgumentsToHeap(SymbolTableReceiverItem receiverItem) {
@@ -174,7 +175,9 @@ public class Translator {
     instructions.add("addi $sp, $sp, " + (offset + 4));
     instructions.add("#end of adding receiver arguments to stack");
   }
-
+  public void addReturnInstruction(){
+    instructions.add("jr $ra");
+  }
   public String getLabel() {
     String returnValue = "LABEL" + labelCounter;
     ++labelCounter;

@@ -67,6 +67,7 @@ receiver[String actorName]:
 	
 	}statements 'end' NL 
 	{	
+		mips.addReturnInstruction();
 		endScope();
 	};
 
@@ -155,6 +156,12 @@ stm_tell:{ArrayList<Type> types = new ArrayList<Type>();}
 				else{
 					if(!actorItem.getSymbolTable().hasReceiver($recName.text, types))
 						print("line"+ $actorId.getLine()  +": receiver not found");
+					String recKey = $recName.text + "#";
+					for (int i = 0; i < types.size(); i++)
+						recKey += types.get(i).toString();
+					SymbolTableReceiverItem recItem = (SymbolTableReceiverItem)actorItem.getSymbolTable().get(recKey);
+					mips.addMessageToActorQueue($actorId.text,recItem);
+
 				}
 			}
 	};
