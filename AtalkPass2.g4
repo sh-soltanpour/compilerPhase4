@@ -21,12 +21,12 @@ grammar AtalkPass2;
 	Translator mips = new Translator();
 
 }
-program: { beginScope();mips.stackPointers.push(SymbolTable.top.getOffset(Register.SP)); } (actor | NL)* {endScope();mips.makeOutput();};
+program: {mips.schedulerInit(); beginScope();mips.stackPointers.push(SymbolTable.top.getOffset(Register.SP)); } (actor | NL)* {endScope();mips.makeOutput();};
 
 actor:
-	{beginScope();} 'actor' ID '<' CONST_NUM '>' NL (
+	{beginScope();} 'actor' id=ID '<' num=CONST_NUM '>' NL {mips.addActorQueue($id.text, Integer.parseInt($num.text));}(
 		state
-		| receiver
+		| receiver[$id.text]
 		| NL
 	)* 'end' {endScope();} (NL | EOF);
 
@@ -52,16 +52,23 @@ state: type id1=ID
 				}
 			})* NL;
 
-receiver:
-	{beginScope();} 'receiver' recName=ID '(' (var1=type ID{SymbolTable.define();} (',' var2=type ID{SymbolTable.define();})*)? ')' NL 
+receiver[String actorName]:
+	{ArrayList<Type> types = new ArrayList<Type>();}
+	{beginScope();} 'receiver' recName=ID '(' (var1=type ID{SymbolTable.define();types.add($var1.return_type);} (',' var2=type ID{SymbolTable.define();types.add($var2.return_type);})*)? ')' NL 
 	{
 		
 		if($recName.text.equals("init") && $var1.text == null){
 			SymbolTable.top.isInitEnable();
+			SymbolTableReceiverItem receiverItem = (SymbolTableReceiverItem) SymbolTable.top.get("init#");
+			mips.addInitToActorQueue($actorName, receiverItem);
 		}
+
+		Tools.addReceiverLabel(mips, actorName, $recName.text, types);
+		Tools.addParametersToStack(mips,types);
 	
 	}statements 'end' NL 
 	{	
+		mips.addReturnInstruction();
 		endScope();
 	};
 
@@ -150,6 +157,12 @@ stm_tell:{ArrayList<Type> types = new ArrayList<Type>();}
 				else{
 					if(!actorItem.getSymbolTable().hasReceiver($recName.text, types))
 						print("line"+ $actorId.getLine()  +": receiver not found");
+					String recKey = $recName.text + "#";
+					for (int i = 0; i < types.size(); i++)
+						recKey += types.get(i).toString();
+					SymbolTableReceiverItem recItem = (SymbolTableReceiverItem)actorItem.getSymbolTable().get(recKey);
+					mips.addMessageToActorQueue($actorId.text,recItem);
+
 				}
 			}
 	};

@@ -20,6 +20,9 @@ public class SymbolTableReceiverItem extends SymbolTableItem {
   public int getOffset() {
     return offset;
   }
+  public Receiver getReceiver(){
+    return receiver;
+  }
 
   Receiver receiver;
   int offset;
