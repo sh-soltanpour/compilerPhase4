@@ -109,11 +109,14 @@ public class Translator {
     initInstructions.add("la $a1, scheduler");
     initInstructions.add("sw $a0, 0($a1)");
     initInstructions.add("li $t6, 0");
+    initInstructions.add("li, $t4, 0"); // t4 counter to check if the program should finish
     initInstructions.add("#end initialize scheduler counter");
 
     schedulerInstructions.add("schedulerCode: ");
     schedulerInstructions.add("la $a0, scheduler");
     schedulerInstructions.add("lw $a1, 0($a0)"); // a1 = scheduler space counter 
+    
+    schedulerInstructions.add("beq, $a1, $t4, END"); //finish program if there is no message for actors in loop
 
     schedulerInstructions.add("rem $t6, $t6, $a1"); // t6 = t6 % a1
     schedulerInstructions.add("li $a2, 4");
@@ -125,7 +128,9 @@ public class Translator {
     schedulerInstructions.add("lw $t1, 4($a3)");
 
     String noNewMessage = getLabel();
+    String incrementLoopCounter = getLabel();
     schedulerInstructions.add("beq $t1,$t0," + noNewMessage);
+    schedulerInstructions.add("li $t4, 0");
     schedulerInstructions.add("li $a2, 4");
     schedulerInstructions.add("mul $a2, $t1, $a2");
     schedulerInstructions.add("add $a2, $a2, $a3");
@@ -138,6 +143,9 @@ public class Translator {
     schedulerInstructions.add("lw $t5, 12($a2)");
     schedulerInstructions.add("jalr $t3");
     schedulerInstructions.add(noNewMessage + ":");
+    schedulerInstructions.add("addi $t4, $t4, 1");
+
+    schedulerInstructions.add(incrementLoopCounter + ":");
     schedulerInstructions.add("addi $t6, $t6, 1");
     schedulerInstructions.add("j schedulerCode");
   }
@@ -201,6 +209,7 @@ public class Translator {
   }
 
   public void makeOutput() {
+    instructions.add("END : ");
     this.addSystemCall(10);
     try {
       PrintWriter writer = new PrintWriter(output);
@@ -222,7 +231,7 @@ public class Translator {
       for (int i = 0; i < instructions.size(); i++) {
         writer.println(instructions.get(i));
       }
-      writer.println("END :");
+      //writer.println("END :");
       writer.close();
     } catch (Exception e) {
       e.printStackTrace();
