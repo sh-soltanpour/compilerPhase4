@@ -84,9 +84,16 @@ public class Translator {
 
     instructions.add("li $a3, 4");
     instructions.add("lw $a2, 0($a0)"); //a2 = counter
+    
+    //update kardane counter(front of queue)
+    instructions.add("addi $a2,$a2, 1");
+    instructions.add("sw $a2, 0($a0)");
+    instructions.add("addi $a2, $a2, -1");
+    //end of update kardane counter(front of queue)
+
     instructions.add("mul $a2, $a2, $a3");
     instructions.add("add $a2, $a0, $a2");
-
+    
     instructions.add("sw $a1, 8($a2)"); // addresse receivero rikhtim
     instructions.add("sw $t7, 12($a2)"); // addresse avvale parametera
 
@@ -123,6 +130,10 @@ public class Translator {
     schedulerInstructions.add("mul $a2, $t1, $a2");
     schedulerInstructions.add("add $a2, $a2, $a3");
     schedulerInstructions.add("lw $t3, 8($a2)");
+    //updating actor rear
+    schedulerInstructions.add("addi $t1,$t1,1");
+    schedulerInstructions.add("sw, $t1,4($a3)");
+    //end of updating actor rear
     // $t3 = first message to run
     schedulerInstructions.add("lw $t5, 12($a2)");
     schedulerInstructions.add("jalr $t3");
