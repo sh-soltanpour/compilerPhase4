@@ -337,5 +337,12 @@ public class Tools {
     }
     mips.addInstruction(label + ":");
   }
-
+  public static void addParametersToStack(Translator mips, ArrayList<Type> types){
+    int totalSize = 0;
+    for (int i = 0; i < types.size(); i++){
+      totalSize += types.get(i).size();
+    }
+    System.out.println("TOtal size is " + totalSize);
+    mips.addHeapParametersToStack(totalSize/4); 
+  }
 }

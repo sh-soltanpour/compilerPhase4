@@ -197,6 +197,14 @@ public class Translator {
   public void addReturnInstruction(){
     instructions.add("jr $ra");
   }
+  public void addHeapParametersToStack(int count){
+      for (int i = 0;i < count; i++){
+        instructions.add("lw $a0, 0($t7)");
+        instructions.add("sw $a0, 0($sp)");
+        instructions.add("addi $sp, $sp, -4");
+        instructions.add("addi $t7, $t7, 4");
+      }
+  }
   public String getLabel() {
     String returnValue = "LABEL" + labelCounter;
     ++labelCounter;

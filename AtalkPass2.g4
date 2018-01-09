@@ -64,6 +64,7 @@ receiver[String actorName]:
 		}
 
 		Tools.addReceiverLabel(mips, actorName, $recName.text, types);
+		Tools.addParametersToStack(mips,types);
 	
 	}statements 'end' NL 
 	{	
