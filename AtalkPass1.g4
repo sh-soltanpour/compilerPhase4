@@ -208,7 +208,7 @@ stm_foreach[boolean foreach]:
 		'foreach' id=ID 'in' expr NL
 			{
 				beginScope();
-				Tools.putLocalVarForeach($id.text,NoType.getInstance());
+				Tools.putLocalVarForeach($id.text,ForeachType.getInstance());
 			}statements[true]{endScope();}
 		'end' NL
 	;

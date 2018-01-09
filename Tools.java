@@ -51,7 +51,7 @@ public class Tools {
   static public void putLocalVarForeach(String name, Type type) {
     try {
       SymbolTable.top.put(
-          new SymbolTableLocalVariableItem(new Variable(name, type), SymbolTable.top.getOffset(Register.SP), false));
+          new SymbolTableForeachItem(new Variable(name, type), SymbolTable.top.getOffset(Register.SP)));
     } catch (ItemAlreadyExistsException e) {
       Tools.putLocalVar(name + "_temp_", type);
     }
@@ -204,13 +204,22 @@ public class Tools {
 
   static void addVariableToStack(Translator mips, String name, int count, boolean isLeft) {
     SymbolTableVariableItemBase item = (SymbolTableVariableItemBase) SymbolTable.top.get(name);
-
     ArrayList<Integer> sizes = new ArrayList<Integer>();
     Type type = item.getVariable().getType();
-    if (!(type instanceof ArrayType)) {
+    if (item instanceof SymbolTableForeachItem){
+      SymbolTableForeachItem foreachItem = (SymbolTableForeachItem) item;
+      int offset = foreachItem.getOffset();
+      int traversingArrayOffset = foreachItem.getTraversingArrayOffset();
+      int typeSize = foreachItem.getType().size();
+      mips.addForeachItemToStack(offset * (-1), traversingArrayOffset,typeSize);
+      // return;
+    }
+    else if (!(type instanceof ArrayType)) {
       if (item.getBaseRegister() == Register.SP) {
+        if (item instanceof SymbolTableForeachItem){
+          
+        }
         if (!isLeft) {
-
           mips.addToStack(name, item.getOffset() * -1);
         } else
           mips.addAddressToStack(name, item.getOffset() * -1);
@@ -330,19 +339,30 @@ public class Tools {
     mips.assignCommandArrayVardef(result);
   }
 
-  public static void addReceiverLabel(Translator mips, String actorName, String receiverName, ArrayList<Type> types) {
+  public static String addReceiverLabel(Translator mips, String actorName, String receiverName, ArrayList<Type> types) {
     String label = actorName + "_" + receiverName + "_";
     for (int i = 0; i < types.size(); i++){
       label += types.get(i).toString();
     }
     mips.addInstruction(label + ":");
+    return label;
   }
   public static void addParametersToStack(Translator mips, ArrayList<Type> types){
     int totalSize = 0;
     for (int i = 0; i < types.size(); i++){
       totalSize += types.get(i).size();
     }
-    System.out.println("TOtal size is " + totalSize);
     mips.addHeapParametersToStack(totalSize/4); 
+  }
+  public static void foreachEnd(Translator mips,String element,String foreachLabel,Type type){
+    SymbolTableForeachItem foreachItem = (SymbolTableForeachItem) SymbolTable.top.get(element);
+    int adr = foreachItem.getOffset() * (-1);
+    int width = ((ArrayType)type).getWidth();
+    mips.addInstruction("lw $a0, " + adr + "($fp)");
+    mips.addInstruction("addi $a0, $a0, 1");
+    mips.addInstruction("li $a1," + width);
+    mips.addInstruction("sw $a0, " + adr + "($fp)");
+    mips.addInstruction("bge $a0, $a1," + foreachLabel);
+    
   }
 }

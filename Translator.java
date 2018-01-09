@@ -142,6 +142,7 @@ public class Translator {
     // $t3 = first message to run
     schedulerInstructions.add("lw $t5, 12($a2)");
     schedulerInstructions.add("jalr $t3");
+    // schedulerInstructions.add("j " + incrementLoopCounter);
     schedulerInstructions.add(noNewMessage + ":");
     schedulerInstructions.add("addi $t4, $t4, 1");
 
@@ -178,14 +179,16 @@ public class Translator {
 
   public void addReceiverArgumentsToHeap(SymbolTableReceiverItem receiverItem) {
     instructions.add("#start of adding receiver arguments to stack");
+    instructions.add("#start of adding receiver arguments to stack");
     ArrayList<Type> argumentTypes = receiverItem.getReceiver().getArgumentTypes();
-    int size = 1;
+    int size = 0;
     for (Type type : argumentTypes) {
-      size *= type.size();
+      size += type.size();
     }
     int offset = size * 4;
+    offset = size; 
     instructions.add("addi $sp, $sp, " + offset);
-    for (int i = 0; i < size; i++) {
+    for (int i = 0; i < size/4; i++) {
       instructions.add("lw $a0, 0($sp)");
       instructions.add("sw $a0, 0($t7)");
       instructions.add("addi $t7, $t7, -4");
@@ -194,7 +197,8 @@ public class Translator {
     instructions.add("addi $sp, $sp, " + (offset + 4));
     instructions.add("#end of adding receiver arguments to stack");
   }
-  public void addReturnInstruction(){
+  public void addReturnInstruction(String recKey){
+    instructions.add(recKey + "END :");
     instructions.add("jr $ra");
   }
   public void addHeapParametersToStack(int count){
@@ -279,6 +283,24 @@ public class Translator {
     instructions.add("sw $a0, 0($sp)");
     instructions.add("addiu $sp, $sp, -4");
     instructions.add("# end of adding variable to stack");
+  }
+  public void addForeachItemToStack(int adr, int traversingArrayOffset, int typeSize){
+    instructions.add("# start of adding foreach item to stack");
+    instructions.add("lw $a0, " + adr + "($fp)"); // a0 = counter
+    
+    instructions.add("li $a1, " + typeSize);
+    instructions.add("mul $a1, $a1, $a0"); // a1 = counter * size
+    instructions.add("addi $a1 , $a1, " + traversingArrayOffset); 
+    
+    // instructions.add("add $a1, $a1, $sp");
+    instructions.add("neg $a1, $a1");
+    
+    instructions.add("add $a1, $a1, $fp");
+    instructions.add("lw $a2, 0($a1)");
+    instructions.add("sw $a2, 0($sp)");
+    instructions.add("addi $sp, $sp, -4");
+    instructions.add("# end of adding foreach item to stack");
+
   }
 
   public void addAddressToStack(String s, int adr) {

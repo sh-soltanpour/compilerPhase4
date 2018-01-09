@@ -63,12 +63,12 @@ receiver[String actorName]:
 			mips.addInitToActorQueue($actorName, receiverItem);
 		}
 
-		Tools.addReceiverLabel(mips, actorName, $recName.text, types);
+		String recLabel = Tools.addReceiverLabel(mips, actorName, $recName.text, types);
 		Tools.addParametersToStack(mips,types);
 	
-	}statements 'end' NL 
+	}statements[recLabel] 'end' NL 
 	{	
-		mips.addReturnInstruction();
+		mips.addReturnInstruction(recLabel);
 		endScope();
 	};
 
@@ -87,23 +87,23 @@ type
 			$return_type= new ArrayType($return_type,size);} ']'
 	)*;
 
-block:
-	{beginScope();} 'begin' NL statements 'end' NL {endScope();};
+block[String recLabel]:
+	{beginScope();} 'begin' NL statements[$recLabel] 'end' NL {endScope();};
 
-statements: (statement | NL)*;
+statements[String recLabel]: (statement[$recLabel] | NL)*;
 
-statement:
-	stm_vardef
-	| stm_assignment
-	| stm_foreach
-	| stm_if_elseif_else
-	| stm_quit
-	| stm_break
-	| stm_tell
-	| stm_write
-	| block;
+statement[String recLabel]:
+	stm_vardef[$recLabel]
+	| stm_assignment[$recLabel]
+	| stm_foreach[$recLabel]
+	| stm_if_elseif_else[$recLabel]
+	| stm_quit[$recLabel]
+	| stm_break[$recLabel]
+	| stm_tell[$recLabel]
+	| stm_write[$recLabel]
+	| block[$recLabel];
 
-stm_vardef:
+stm_vardef[String recLabel]:
 	type id1=ID { SymbolTable.define();Tools.addLocalToStack(mips,$id1.text);} ('=' var2=expr[false,false]
 	{
 		
@@ -131,7 +131,7 @@ stm_vardef:
 		)?
 	)* NL;
 
-stm_tell:{ArrayList<Type> types = new ArrayList<Type>();}
+stm_tell[String recLabel]:{ArrayList<Type> types = new ArrayList<Type>();}
 	(actorId = ID | actorId='sender' | actorId='self') '<<' recName=ID '(' (var1=expr[false,false]{types.add($var1.return_type);} (',' var2=expr[false,false]{types.add($var2.return_type);})*)? ')' NL
 	{		
 			if ($actorId.text.equals("self")){
@@ -167,21 +167,33 @@ stm_tell:{ArrayList<Type> types = new ArrayList<Type>();}
 			}
 	};
 
-stm_write: writeToken='write' '(' var1=expr[false,false] ')' NL{mips.write($var1.return_type);Tools.checkWriteArgument($var1.return_type,$writeToken.getLine());};
+stm_write[String recLabel]: writeToken='write' '(' var1=expr[false,false] ')' NL{mips.write($var1.return_type);Tools.checkWriteArgument($var1.return_type,$writeToken.getLine());};
 
-stm_if_elseif_else:
-	ifToken='if' var1=expr[false,false]{mips.ifCondition();Tools.checkConditionType($var1.return_type,$ifToken.getLine());} NL{beginScope();} statements{endScope();mips.addJumpInst();mips.addLabel();}
-	 (elseifToken='elseif' var2=expr[false,false] {mips.elsifCondition();Tools.checkConditionType($var2.return_type,$elseifToken.getLine());} NL {beginScope();}statements{endScope();mips.addJumpInst();mips.addLabel();})* (
-		'else' NL {beginScope();}statements{endScope();}
+stm_if_elseif_else[String recLabel]:
+	ifToken='if' var1=expr[false,false]{mips.ifCondition();Tools.checkConditionType($var1.return_type,$ifToken.getLine());} NL{beginScope();} statements[$recLabel]{endScope();mips.addJumpInst();mips.addLabel();}
+	 (elseifToken='elseif' var2=expr[false,false] {mips.elsifCondition();Tools.checkConditionType($var2.return_type,$elseifToken.getLine());} NL {beginScope();}statements[$recLabel]{endScope();mips.addJumpInst();mips.addLabel();})* (
+		'else' NL {beginScope();}statements[$recLabel]{endScope();}
 	)? {mips.addJumpLabel();}'end' NL;
 
-stm_foreach: {beginScope();} foreachToken='foreach' ID {SymbolTable.define();} 'in' var1=expr[false,false]{Tools.checkArrayOfForeach($var1.return_type,$foreachToken.getLine());} NL statements 'end' NL{endScope();};
+stm_foreach[String recLabel]: {beginScope();} foreachToken='foreach' id=ID {mips.addIntToStack(0);SymbolTable.define();} 'in' 
+{int arrayOffset=SymbolTable.top.getOffset(Register.SP);}
+var1=expr[false,false]
+{	
+	Tools.checkArrayOfForeach($var1.return_type,$foreachToken.getLine());
+	SymbolTableForeachItem item = (SymbolTableForeachItem) SymbolTable.top.get($id.text);
+	ArrayType arrayType = (ArrayType)($var1.return_type);
+	item.setType(arrayType.getType());
+	item.setTraversingArrayOffset(arrayOffset);
+	String foreachLabel = mips.getLabel();
+	mips.addInstruction(foreachLabel + ":");
 
-stm_quit: 'quit' NL;
+} NL statements[$recLabel] 'end' NL{Tools.foreachEnd(mips,$id.text,foreachLabel,$var1.return_type);endScope();};
 
-stm_break: 'break' NL;
+stm_quit[String recLabel]: 'quit'{mips.addInstruction("j " + $recLabel + "END");} NL;
 
-stm_assignment: expr[false,true] NL;
+stm_break[String recLabel]: 'break' NL;
+
+stm_assignment[String recLabel]: expr[false,true] NL;
 
 expr[boolean isLeft, boolean isLeftMost]
 	returns[Type return_type, boolean isLvalue, int line]:
@@ -334,6 +346,11 @@ expr_other[boolean isLeft, boolean isLeftMost]
 								$return_type = NoType.getInstance();
                 print("line" + $id.line + ": Item " + $id.text + " doesn't exist.");
             }
+						else if (item instanceof SymbolTableForeachItem){
+							SymbolTableForeachItem var = (SymbolTableForeachItem) item;
+							$return_type = var.getType();
+							$isLvalue = false;
+						}
             else {
                 SymbolTableVariableItemBase var = (SymbolTableVariableItemBase) item;
 								$return_type = var.getVariable().getType();
